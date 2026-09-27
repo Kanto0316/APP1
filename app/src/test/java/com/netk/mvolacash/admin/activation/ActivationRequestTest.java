@@ -1,20 +1,21 @@
 package com.netk.mvolacash.admin.activation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import org.junit.Test;
 
 public class ActivationRequestTest {
-    @Test
-    public void requestCodeIsTrimmedAndUppercased() {
-        ActivationRequest request = new ActivationRequest("  abcd-1234  ");
-        assertEquals("ABCD-1234", request.getRequestCode());
+    private static final String ID = "23456789ABCDEFGHJKMNPQRSTUVWXYZ2";
+
+    @Test public void normalizesCaseAndSeparators() {
+        ActivationRequest request = new ActivationRequest(" 2345-6789-abcd-efgh-jkmn-pqrs-tuvw-xyz2 ");
+        assertTrue(request.isValid());
+        assertEquals(ID, request.getInstallationId());
+        assertEquals("2345-6789-ABCD-EFGH-JKMN-PQRS-TUVW-XYZ2", request.getRequestCode());
     }
 
-    @Test
-    public void nullRequestIsEmpty() {
-        assertTrue(new ActivationRequest(null).isEmpty());
+    @Test public void rejectsEmptyAndAmbiguousCharacters() {
+        assertFalse(new ActivationRequest(null).isValid());
+        assertTrue(new ActivationRequest(" ").isEmpty());
+        assertFalse(new ActivationRequest("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO").isValid());
     }
 }
-

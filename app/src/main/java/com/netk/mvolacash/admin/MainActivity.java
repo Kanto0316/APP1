@@ -12,11 +12,17 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.netk.mvolacash.admin.activation.ActivationRequest;
+import com.netk.mvolacash.admin.activation.ActivationSigner;
+import com.netk.mvolacash.admin.activation.AndroidKeystoreActivationSigner;
+
+import java.security.GeneralSecurityException;
 
 public class MainActivity extends AppCompatActivity {
     private TextInputLayout requestInputLayout;
     private TextInputEditText requestInput;
     private TextInputEditText activationOutput;
+    private TextInputEditText publicKeyOutput;
+    private ActivationSigner activationSigner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,13 +32,23 @@ public class MainActivity extends AppCompatActivity {
         requestInputLayout = findViewById(R.id.requestInputLayout);
         requestInput = findViewById(R.id.requestInput);
         activationOutput = findViewById(R.id.activationOutput);
+        publicKeyOutput = findViewById(R.id.publicKeyOutput);
         MaterialButton pasteButton = findViewById(R.id.pasteButton);
         MaterialButton generateButton = findViewById(R.id.generateButton);
         MaterialButton copyButton = findViewById(R.id.copyButton);
+        MaterialButton copyPublicKeyButton = findViewById(R.id.copyPublicKeyButton);
 
         pasteButton.setOnClickListener(view -> pasteRequestCode());
         generateButton.setOnClickListener(view -> generateActivation());
         copyButton.setOnClickListener(view -> copyActivationCode());
+        copyPublicKeyButton.setOnClickListener(view -> copyPublicKey());
+
+        try {
+            activationSigner = new AndroidKeystoreActivationSigner();
+            publicKeyOutput.setText(activationSigner.getPublicKeyBase64());
+        } catch (GeneralSecurityException e) {
+            Toast.makeText(this, R.string.keystore_error, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void pasteRequestCode() {
@@ -51,14 +67,37 @@ public class MainActivity extends AppCompatActivity {
         ActivationRequest request = new ActivationRequest(textOf(requestInput));
         requestInput.setText(request.getRequestCode());
 
-        if (request.isEmpty()) {
-            requestInputLayout.setError(getString(R.string.request_required));
+        if (!request.isValid()) {
+            requestInputLayout.setError(getString(request.isEmpty()
+                    ? R.string.request_required : R.string.request_invalid));
             activationOutput.setText("");
             return;
         }
 
         requestInputLayout.setError(null);
-        activationOutput.setText(R.string.activation_not_configured);
+        if (activationSigner == null) {
+            Toast.makeText(this, R.string.keystore_error, Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            activationOutput.setText(activationSigner.sign(request).getActivationCode());
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            activationOutput.setText("");
+            Toast.makeText(this, R.string.signing_error, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void copyPublicKey() {
+        String publicKey = textOf(publicKeyOutput);
+        if (publicKey.isEmpty()) {
+            Toast.makeText(this, R.string.public_key_unavailable, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ClipboardManager clipboard =
+                (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        clipboard.setPrimaryClip(ClipData.newPlainText(
+                getString(R.string.activation_public_key), publicKey));
+        Toast.makeText(this, R.string.public_key_copied, Toast.LENGTH_SHORT).show();
     }
 
     private void copyActivationCode() {

@@ -10,9 +10,14 @@
     <string name="activation_code">Code d’activation</string>
     <string name="copy">COPIER</string>
     <string name="request_required">Le code de demande est obligatoire</string>
-    <string name="activation_not_configured">Système d’activation non configuré</string>
+    <string name="request_invalid">Format incorrect : 32 caractères non ambigus attendus</string>
     <string name="clipboard_empty">Le presse-papiers est vide</string>
     <string name="nothing_to_copy">Aucun code d’activation à copier</string>
     <string name="activation_copied">Code d’activation copié</string>
+    <string name="admin_configuration">CONFIGURATION ADMIN</string>
+    <string name="activation_public_key">Clé publique d’activation</string>
+    <string name="public_key_copied">Clé publique d’activation copiée</string>
+    <string name="public_key_unavailable">Clé publique indisponible</string>
+    <string name="keystore_error">Android Keystore est indisponible</string>
+    <string name="signing_error">Impossible de signer l’activation</string>
 </resources>
-
