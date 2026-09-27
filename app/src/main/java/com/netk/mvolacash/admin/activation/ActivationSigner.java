@@ -1,7 +1,9 @@
 package com.netk.mvolacash.admin.activation;
 
-/** Contract for the secure signer that will be implemented in a later phase. */
-public interface ActivationSigner {
-    ActivationResponse sign(ActivationRequest request);
-}
+import java.security.GeneralSecurityException;
 
+/** Contract for an activation authority. Implementations must never expose the private key. */
+public interface ActivationSigner {
+    ActivationResponse sign(ActivationRequest request) throws GeneralSecurityException;
+    String getPublicKeyBase64() throws GeneralSecurityException;
+}
