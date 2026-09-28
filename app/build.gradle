@@ -2,6 +2,56 @@ plugins {
     id 'com.android.application'
 }
 
+// Release signing is deliberately external to the repository. Values in the
+// optional root-level keystore.properties file take precedence over environment
+// variables, so local builds and CI can use the same configuration safely.
+def releaseSigningProperties = new Properties()
+def releaseSigningPropertiesFile = rootProject.file('keystore.properties')
+if (releaseSigningPropertiesFile.isFile()) {
+    releaseSigningPropertiesFile.withInputStream { stream ->
+        releaseSigningProperties.load(stream)
+    }
+}
+
+def releaseSigningValue = { String propertyName, String environmentName ->
+    def value = releaseSigningProperties.getProperty(propertyName)
+    if (value == null || value.trim().isEmpty()) {
+        value = System.getenv(environmentName)
+    }
+    value?.trim()
+}
+
+def releaseStoreFile = releaseSigningValue('storeFile', 'MVOLACASH_RELEASE_STORE_FILE')
+def releaseStorePassword = releaseSigningValue('storePassword', 'MVOLACASH_RELEASE_STORE_PASSWORD')
+def releaseKeyAlias = releaseSigningValue('keyAlias', 'MVOLACASH_RELEASE_KEY_ALIAS')
+def releaseKeyPassword = releaseSigningValue('keyPassword', 'MVOLACASH_RELEASE_KEY_PASSWORD')
+def releaseSigningConfigured = [
+        releaseStoreFile,
+        releaseStorePassword,
+        releaseKeyAlias,
+        releaseKeyPassword
+].every { it != null && !it.isEmpty() }
+
+def validateReleaseSigning = {
+    if (!releaseSigningConfigured) {
+        throw new GradleException(
+                'Release signing is not configured. Provide storeFile, storePassword, ' +
+                'keyAlias and keyPassword in the ignored root keystore.properties file, ' +
+                'or set the MVOLACASH_RELEASE_* environment variables. A keystore will ' +
+                'not be generated automatically.'
+        )
+    }
+
+    def configuredStoreFile = rootProject.file(releaseStoreFile)
+    if (!configuredStoreFile.isFile()) {
+        throw new GradleException(
+                "Release keystore not found: ${configuredStoreFile}. " +
+                'Restore MVolaCashAdmin-release.jks from the secure backup; do not create ' +
+                'a replacement key for an existing installation.'
+        )
+    }
+}
+
 android {
     namespace 'com.netk.mvolacash.admin'
     compileSdk 35
@@ -14,16 +64,48 @@ android {
         versionName '1.1'
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            release {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Fail after project evaluation for direct release invocations, before Android
+// SDK or task dependency checks can obscure the actionable signing error.
+gradle.projectsEvaluated {
+    if (gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }) {
+        validateReleaseSigning()
+    }
+}
+
+// Never fall back to an unsigned artifact or generate a key. This check is
+// attached to every release task, including release tasks reached via `assemble`.
+tasks.configureEach { task ->
+    if (task.name.toLowerCase().contains('release')) {
+        task.doFirst {
+            validateReleaseSigning()
+        }
     }
 }
 
