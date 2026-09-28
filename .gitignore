@@ -6,3 +6,7 @@
 /app/build/
 .DS_Store
 
+# Permanent Android release signing material (never commit these files)
+*.jks
+*.keystore
+keystore.properties
