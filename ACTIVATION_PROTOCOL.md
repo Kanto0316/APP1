@@ -11,6 +11,16 @@ Admin signe en UTF-8 la forme canonique
 `MVACT1.<payload UTF-8 en Base64URL sans padding>.<signature DER en Base64URL sans padding>`.
 La clé publique affichée est un SubjectPublicKeyInfo X.509 encodé en Base64.
 
+Ce format V1 reste utilisé pour les licences permanentes afin que les licences
+existantes et les nouveaux Clients restent compatibles. Les licences temporaires
+utilisent la forme canonique V2 :
+`MVOLACASH|2|<TYPE>|<INSTALLATION_ID>|<ISSUED_AT>|<EXPIRES_AT>`, où `TYPE` vaut
+`WEEK`, `MONTH` ou `PERMANENT` et les dates sont des secondes Unix UTC. Une
+absence d’expiration V2 est représentée exclusivement par le texte ASCII `NONE`.
+`WEEK` expire sept jours après l’émission et `MONTH` expire un mois calendaire
+après l’émission, calculé en UTC. L’enveloppe reste
+`MVACT1.<payload Base64URL sans padding>.<signature DER Base64URL sans padding>`.
+
 La paire est créée une seule fois sous l’alias Android Keystore
 `mvolacash_activation_signing_key`. La clé privée n’est jamais exportée.
 
