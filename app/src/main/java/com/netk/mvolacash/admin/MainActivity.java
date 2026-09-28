@@ -4,6 +4,9 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,14 +17,21 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.netk.mvolacash.admin.activation.ActivationRequest;
 import com.netk.mvolacash.admin.activation.ActivationSigner;
 import com.netk.mvolacash.admin.activation.AndroidKeystoreActivationSigner;
+import com.netk.mvolacash.admin.activation.ActivationResponse;
+import com.netk.mvolacash.admin.activation.LicenseType;
 
 import java.security.GeneralSecurityException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private TextInputLayout requestInputLayout;
     private TextInputEditText requestInput;
     private TextInputEditText activationOutput;
     private TextInputEditText publicKeyOutput;
+    private RadioGroup licenseTypeGroup;
+    private TextView licenseSummary;
     private ActivationSigner activationSigner;
 
     @Override
@@ -33,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
         requestInput = findViewById(R.id.requestInput);
         activationOutput = findViewById(R.id.activationOutput);
         publicKeyOutput = findViewById(R.id.publicKeyOutput);
+        licenseTypeGroup = findViewById(R.id.licenseTypeGroup);
+        licenseSummary = findViewById(R.id.licenseSummary);
         MaterialButton pasteButton = findViewById(R.id.pasteButton);
         MaterialButton generateButton = findViewById(R.id.generateButton);
         MaterialButton copyButton = findViewById(R.id.copyButton);
@@ -71,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
             requestInputLayout.setError(getString(request.isEmpty()
                     ? R.string.request_required : R.string.request_invalid));
             activationOutput.setText("");
+            licenseSummary.setVisibility(View.GONE);
             return;
         }
 
@@ -80,11 +93,39 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         try {
-            activationOutput.setText(activationSigner.sign(request).getActivationCode());
+            LicenseType type = selectedLicenseType();
+            long issuedAt = System.currentTimeMillis() / 1000L;
+            ActivationResponse response = activationSigner.sign(request, type, issuedAt);
+            activationOutput.setText(response.getActivationCode());
+            showLicenseSummary(response);
         } catch (GeneralSecurityException | IllegalArgumentException e) {
             activationOutput.setText("");
+            licenseSummary.setVisibility(View.GONE);
             Toast.makeText(this, R.string.signing_error, Toast.LENGTH_LONG).show();
         }
+    }
+
+    private LicenseType selectedLicenseType() {
+        int selected = licenseTypeGroup.getCheckedRadioButtonId();
+        if (selected == R.id.weekLicense) return LicenseType.WEEK;
+        if (selected == R.id.monthLicense) return LicenseType.MONTH;
+        return LicenseType.PERMANENT;
+    }
+
+    private void showLicenseSummary(ActivationResponse response) {
+        String label;
+        if (response.getLicenseTypeEnum() == LicenseType.WEEK) label = getString(R.string.one_week);
+        else if (response.getLicenseTypeEnum() == LicenseType.MONTH) label = getString(R.string.one_month);
+        else label = getString(R.string.permanent);
+
+        if (response.getExpiresAt() == null) {
+            licenseSummary.setText(getString(R.string.license_summary, label));
+        } else {
+            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy 'à' HH:mm", Locale.FRANCE);
+            licenseSummary.setText(getString(R.string.temporary_license_summary, label,
+                    formatter.format(new Date(response.getExpiresAt() * 1000L))));
+        }
+        licenseSummary.setVisibility(View.VISIBLE);
     }
 
     private void copyPublicKey() {

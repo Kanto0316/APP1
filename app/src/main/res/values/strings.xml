@@ -6,6 +6,10 @@
     <string name="paste">COLLER</string>
     <string name="license_type">Type de licence</string>
     <string name="permanent">Permanente</string>
+    <string name="one_week">1 semaine</string>
+    <string name="one_month">1 mois</string>
+    <string name="license_summary">Licence : %1$s</string>
+    <string name="temporary_license_summary">Licence : %1$s\nExpire le : %2$s</string>
     <string name="generate_activation">GÉNÉRER L’ACTIVATION</string>
     <string name="activation_code">Code d’activation</string>
     <string name="copy">COPIER</string>

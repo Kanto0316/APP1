@@ -97,14 +97,35 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <com.google.android.material.radiobutton.MaterialRadioButton
-                    android:id="@+id/permanentLicense"
-                    android:layout_width="wrap_content"
+                <RadioGroup
+                    android:id="@+id/licenseTypeGroup"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:clickable="false"
-                    android:text="@string/permanent"
-                    android:textColor="@color/text_primary" />
+                    android:checkedButton="@id/permanentLicense"
+                    android:orientation="vertical">
+
+                    <com.google.android.material.radiobutton.MaterialRadioButton
+                        android:id="@+id/weekLicense"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/one_week"
+                        android:textColor="@color/text_primary" />
+
+                    <com.google.android.material.radiobutton.MaterialRadioButton
+                        android:id="@+id/monthLicense"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/one_month"
+                        android:textColor="@color/text_primary" />
+
+                    <com.google.android.material.radiobutton.MaterialRadioButton
+                        android:id="@+id/permanentLicense"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/permanent"
+                        android:textColor="@color/text_primary" />
+                </RadioGroup>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/generateButton"
@@ -130,6 +151,15 @@
                         android:minHeight="64dp"
                         android:textIsSelectable="true" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/licenseSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/copyButton"

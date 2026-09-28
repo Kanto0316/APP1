@@ -38,13 +38,38 @@ public final class AndroidKeystoreActivationSigner implements ActivationSigner {
         if (request == null || !request.isValid()) {
             throw new IllegalArgumentException("Code de demande invalide");
         }
+        return signCanonical(request, ActivationResponse.canonicalData(request.getInstallationId()),
+                null, 0, null);
+    }
+
+    @Override
+    public ActivationResponse sign(ActivationRequest request, LicenseType type, long issuedAt)
+            throws GeneralSecurityException {
+        if (request == null || !request.isValid()) {
+            throw new IllegalArgumentException("Code de demande invalide");
+        }
+        if (type == LicenseType.PERMANENT) return sign(request);
+        Long expiresAt = LicenseExpiration.forLicense(type, issuedAt);
+        byte[] canonical = ActivationResponse.canonicalDataV2(type, request.getInstallationId(),
+                issuedAt, expiresAt);
+        return signCanonical(request, canonical, type, issuedAt, expiresAt);
+    }
+
+    private ActivationResponse signCanonical(ActivationRequest request, byte[] canonical,
+            LicenseType type, long issuedAt, Long expiresAt) throws GeneralSecurityException {
+        if (request == null || !request.isValid()) {
+            throw new IllegalArgumentException("Code de demande invalide");
+        }
         KeyStore store = loadStore();
         PrivateKey key = (PrivateKey) store.getKey(KEY_ALIAS, null);
         if (key == null) throw new GeneralSecurityException("Clé privée Admin indisponible");
         Signature signer = Signature.getInstance("SHA256withECDSA");
         signer.initSign(key);
-        signer.update(ActivationResponse.canonicalData(request.getInstallationId()));
-        return new ActivationResponse(request.getInstallationId(), signer.sign());
+        signer.update(canonical);
+        byte[] signature = signer.sign();
+        return type == null ? new ActivationResponse(request.getInstallationId(), signature)
+                : ActivationResponse.v2(type, request.getInstallationId(), issuedAt, expiresAt,
+                        signature);
     }
 
     @Override
